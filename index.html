@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Head Soccer MVP</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.js"></script>
+
+<style>
+body { margin:0; background:#000; overflow:hidden; }
+#game { width:360px; height:640px; margin:auto; }
+#controls {
+  position:fixed; bottom:10px; width:100%;
+  display:flex; justify-content:space-between;
+  padding:0 15px;
+}
+.btn {
+  width:60px; height:60px;
+  background:rgba(255,255,255,0.25);
+  border-radius:50%;
+  color:white; font-size:26px;
+  display:flex; align-items:center; justify-content:center;
+}
+</style>
+</head>
+
+<body>
+
+<div id="game"></div>
+
+<div id="controls">
+  <div>
+    <div class="btn" id="left">◀</div>
+    <div class="btn" id="right">▶</div>
+  </div>
+  <div>
+    <div class="btn" id="jump">⬆</div>
+    <div class="btn" id="kick">⚽</div>
+  </div>
+</div>
+
+<script>
+const config = {
+  type: Phaser.AUTO,
+  parent: 'game',
+  width: 360,
+  height: 640,
+  backgroundColor: '#1b3b5f',
+  physics: {
+    default: 'arcade',
+    arcade: { gravity: { y: 900 }, debug:false }
+  },
+  scene: { create, update }
+};
+
+new Phaser.Game(config);
+
+let playerBody, ballBody;
+let playerGfx, ballGfx, scoreText;
+let score = 0;
+
+function create() {
+  // Земля
+  const ground = this.physics.add.staticImage(180, 620).setDisplaySize(360, 40);
+
+  // PLAYER (body)
+  playerBody = this.physics.add.sprite(90, 540, null);
+  playerBody.body.setSize(50, 80);
+  playerBody.setCollideWorldBounds(true);
+
+  // PLAYER (visual)
+  playerGfx = this.add.graphics();
+
+  // BALL (body)
+  ballBody = this.physics.add.sprite(180, 300, null);
+  ballBody.body.setCircle(14);
+  ballBody.setBounce(0.85);
+  ballBody.setCollideWorldBounds(true);
+
+  // BALL (visual)
+  ballGfx = this.add.graphics();
+
+  this.physics.add.collider(playerBody, ground);
+  this.physics.add.collider(ballBody, ground);
+  this.physics.add.collider(ballBody, playerBody);
+
+  scoreText = this.add.text(10,10,'GOALS: 0',{color:'#fff',fontSize:'20px'});
+
+  setupControls(this);
+}
+
+function update() {
+  // Рисуем игрока
+  playerGfx.clear();
+  playerGfx.fillStyle(0x00ffcc);
+  playerGfx.fillRect(
+    playerBody.x - 25,
+    playerBody.y - 40,
+    50,
+    80
+  );
+
+  // Рисуем мяч
+  ballGfx.clear();
+  ballGfx.fillStyle(0xffffff);
+  ballGfx.fillCircle(ballBody.x, ballBody.y, 14);
+
+  // ГОЛ
+  if (ballBody.x > 340 && ballBody.y > 440) {
+    score++;
+    scoreText.setText('GOALS: ' + score);
+    ballBody.setPosition(180, 300);
+    showGoal(this);
+  }
+}
+
+function showGoal(scene) {
+  const t = scene.add.text(80,300,'GOOOAL!',{
+    fontSize:'40px', color:'#ff0'
+  });
+  scene.time.delayedCall(1200,()=>t.destroy());
+}
+
+function setupControls(scene) {
+  left.ontouchstart = ()=>playerBody.setVelocityX(-200);
+  right.ontouchstart = ()=>playerBody.setVelocityX(200);
+  left.ontouchend = right.ontouchend = ()=>playerBody.setVelocityX(0);
+
+  jump.ontouchstart = ()=>{
+    if (playerBody.body.blocked.down)
+      playerBody.setVelocityY(-450);
+  };
+
+  kick.ontouchstart = ()=>{
+    scene.physics.velocityFromAngle(-45, 450, ballBody.body.velocity);
+  };
+}
+</script>
+</body>
+</html>
